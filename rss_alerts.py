@@ -109,7 +109,9 @@ def send_email(subject, html_body):
     msg["Date"] = formatdate(localtime=True)
 
     with smtplib.SMTP(SMTP_HOST, SMTP_PORT) as smtp:
+        smtp.ehlo()
         smtp.starttls()
+        smtp.ehlo()
         smtp.login(GMAIL_USER, GMAIL_APP_PASSWORD)
         smtp.sendmail(GMAIL_USER, [TO_EMAIL], msg.as_string())
 
