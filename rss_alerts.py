@@ -10,19 +10,37 @@ from email.utils import formatdate, parsedate_to_datetime
 from html import escape
 
 # --- Config from env / secrets ---
-SUBREDDIT = os.getenv("SUBREDDIT", "").strip()
-GMAIL_USER = os.getenv("GMAIL_USER", "").strip()
-GMAIL_APP_PASSWORD = os.getenv("GMAIL_APP_PASSWORD", "").strip()
-TO_EMAIL = os.getenv("TO_EMAIL", "").strip()
-SENDER_NAME = os.getenv("SENDER_NAME", "EquipCore Alerts").strip()
+def env_str(name, default=None):
+    val = os.getenv(name)
+    if val is None:
+        return default
+    val = val.strip()
+    return val or default
 
-SMTP_HOST = os.getenv("SMTP_HOST", "smtp.gmail.com").strip()
-SMTP_PORT = int(os.getenv("SMTP_PORT", "587"))
 
-GIST_TOKEN = os.getenv("GIST_TOKEN", "").strip()
-GIST_ID = os.getenv("GIST_ID", "").strip()
+def env_int(name, default):
+    val = env_str(name)
+    if val is None:
+        return default
+    try:
+        return int(val)
+    except ValueError as exc:
+        raise SystemExit(f"Invalid integer for {name}: {val}") from exc
 
-POLL_LOOKBACK_MINUTES = int(os.getenv("POLL_LOOKBACK_MINUTES", "60"))
+
+SUBREDDIT = env_str("SUBREDDIT", "")
+GMAIL_USER = env_str("GMAIL_USER", "")
+GMAIL_APP_PASSWORD = env_str("GMAIL_APP_PASSWORD", "")
+TO_EMAIL = env_str("TO_EMAIL", "")
+SENDER_NAME = env_str("SENDER_NAME", "EquipCore Alerts")
+
+SMTP_HOST = env_str("SMTP_HOST", "smtp.gmail.com")
+SMTP_PORT = env_int("SMTP_PORT", 587)
+
+GIST_TOKEN = env_str("GIST_TOKEN", "")
+GIST_ID = env_str("GIST_ID", "")
+
+POLL_LOOKBACK_MINUTES = env_int("POLL_LOOKBACK_MINUTES", 60)
 
 STATE_FILENAME = "seen.json"  # stored inside the Gist
 
