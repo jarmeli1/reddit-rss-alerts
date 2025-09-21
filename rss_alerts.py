@@ -219,7 +219,15 @@ def recent_enough(entry, cutoff):
 # --- Main ---
 def main():
     rss_url = f"https://www.reddit.com/r/{SUBREDDIT}/new/.rss"
-    feed = feedparser.parse(rss_url)
+    feed = feedparser.parse(
+        rss_url,
+        request_headers={
+            "User-Agent": env_str(
+                "FEED_USER_AGENT",
+                "github.com/jarmeli1/reddit-rss-alerts (RSS Gmail Alerts)",
+            )
+        },
+    )
 
     if feed.bozo:
         detail = getattr(feed, "bozo_exception", "")
