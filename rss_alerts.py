@@ -41,6 +41,10 @@ GIST_TOKEN = env_str("GIST_TOKEN", "")
 GIST_ID = env_str("GIST_ID", "")
 
 POLL_LOOKBACK_MINUTES = env_int("POLL_LOOKBACK_MINUTES", 60)
+FEED_USER_AGENT = env_str(
+    "FEED_USER_AGENT",
+    "github.com/jarmeli1/reddit-rss-alerts (RSS Gmail Alerts)",
+)
 
 STATE_FILENAME = "seen.json"  # stored inside the Gist
 
@@ -116,6 +120,31 @@ def gist_save_state(seen_ids):
     }
     r = requests.patch(url, headers=gist_headers(), json=payload, timeout=20)
     r.raise_for_status()
+
+
+# --- RSS ---
+def fetch_reddit_feed(url):
+    headers = {
+        "User-Agent": FEED_USER_AGENT,
+        "Accept": "application/rss+xml, application/xml;q=0.9, */*;q=0.8",
+    }
+    response = requests.get(url, headers=headers, timeout=20)
+    try:
+        response.raise_for_status()
+    except requests.HTTPError as exc:
+        snippet = response.text[:200].replace("\n", " ") if response.text else ""
+        raise SystemExit(
+            f"RSS HTTP error for {url}: {exc}; first 200 chars: {snippet!r}"
+        ) from exc
+
+    feed = feedparser.parse(response.content)
+    if feed.bozo:
+        detail = getattr(feed, "bozo_exception", "")
+        snippet = response.text[:200].replace("\n", " ") if response.text else ""
+        raise SystemExit(
+            f"RSS parse error for {url}: {detail}; first 200 chars: {snippet!r}"
+        )
+    return feed
 
 
 # --- Email ---
@@ -219,19 +248,7 @@ def recent_enough(entry, cutoff):
 # --- Main ---
 def main():
     rss_url = f"https://www.reddit.com/r/{SUBREDDIT}/new/.rss"
-    feed = feedparser.parse(
-        rss_url,
-        request_headers={
-            "User-Agent": env_str(
-                "FEED_USER_AGENT",
-                "github.com/jarmeli1/reddit-rss-alerts (RSS Gmail Alerts)",
-            )
-        },
-    )
-
-    if feed.bozo:
-        detail = getattr(feed, "bozo_exception", "")
-        raise SystemExit(f"RSS parse error for {rss_url}: {detail}")
+    feed = fetch_reddit_feed(rss_url)
 
     seen_ids = gist_get_state()
     now = utcnow()
