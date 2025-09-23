@@ -10,6 +10,7 @@ This repository delivers near-real-time Reddit post alerts to Gmail and can opti
 3. Emails new entries over Gmail SMTP and records the IDs back to the Gist for deduplication.
 
 2. **Email → Reddit Poster** (every 15 minutes) runs `email_to_reddit.py`, polling a Gmail inbox for specially tagged emails and submitting them to a subreddit with the Reddit API.
+3. **Reply → Reddit Comment** (every 15 minutes) runs `email_reply_to_reddit.py`, turning email replies to the alerts into Reddit comments on the original thread.
 
 ```
 GitHub Actions (cron) ──▶ rss_alerts.py ───▶ Gmail alerts
@@ -30,7 +31,7 @@ Set the following repository secrets under **Settings → Secrets and variables 
 
 | Secret | Required | Description |
 | --- | --- | --- |
-| `SUBREDDIT` | ✅ | Subreddit name (e.g., `physicaltherapy`). |
+| `SUBREDDIT` | ❌ | Single subreddit fallback (e.g., `physicaltherapy`). Use `subreddits.json` for many. |
 | `GMAIL_USER` | ✅ | Gmail address that owns the App Password. |
 | `GMAIL_APP_PASSWORD` | ✅ | 16-character Gmail App Password (no spaces needed; keep formatting consistent). |
 | `TO_EMAIL` | ✅ | Recipient Gmail address (can match `GMAIL_USER`). |
@@ -42,6 +43,7 @@ Set the following repository secrets under **Settings → Secrets and variables 
 | `GIST_ID` | ✅ | The ID (hash) of your private Gist. |
 | `INCLUDE_KEYWORDS` | ❌ | Comma-separated list; only posts containing at least one term will alert. |
 | `EXCLUDE_KEYWORDS` | ❌ | Comma-separated list; posts containing any term will be skipped but marked seen. |
+| `SUBREDDIT_CONFIG_PATH` | ❌ | Path (relative) to a JSON list of subreddit configs; defaults to `subreddits.json` if present. |
 
 > Tip: confirm the Gist is private and contains `seen.json` with `[]` before the first workflow execution.
 
@@ -64,13 +66,20 @@ Add these additional secrets if you want GitHub Actions to convert tagged emails
 | `GMAIL_IMAP_HOST` | ❌ | Defaults to `imap.gmail.com`. |
 | `GMAIL_IMAP_PORT` | ❌ | Defaults to `993`. |
 | `GMAIL_IMAP_MAILBOX` | ❌ | Defaults to `INBOX`; set to a Gmail label if you filter posts there. |
-| `EMAIL_SUBJECT_PREFIX` | ❌ | Defaults to `[Reddit]`; only emails whose subject begins with this string are posted. Set blank to post every unread email (not recommended). |
+| `EMAIL_SUBJECT_PREFIX` | ❌ | Defaults to `[Reddit]`; only emails whose subject begins with this string are posted as new threads. |
+| `EMAIL_REPLY_SUBJECT_PREFIX` | ❌ | Defaults to `Re: [r/`; replies must start with this prefix to become comments.
+
+**Subreddit list & keywords**
+
+- `subreddits.json` contains the monitored communities and per-subreddit keywords. Edit or extend it to tune coverage; each entry can define `include_keywords`/`exclude_keywords`. When present (or when `SUBREDDIT_CONFIG_PATH` points to another JSON file), the workflow automatically loops through every entry.
+- If you prefer the original single-subreddit mode, delete/ignore `subreddits.json` and keep using the `SUBREDDIT`/`INCLUDE_KEYWORDS` secrets.
 
 Workflow behaviour:
 
 - The script checks the mailbox for unread messages. Only those whose subject begins with `EMAIL_SUBJECT_PREFIX` are considered. After a successful post, the email is marked read.
 - Email subject (prefix stripped) becomes the Reddit title (300 char max). The plain-text body becomes the self-post body. Emails without a text/plain part are skipped and marked read.
 - Leave unwanted emails unread; they will be retried each run until the issue is resolved. Skipped messages (e.g., missing prefix or body) are marked read to avoid loops; adjust the prefix to tighten or loosen the rules.
+- Replies (subjects like `Re: [r/<subreddit>] ...`) are scanned for the Reddit permalink included in the original alert. The top portion of the reply becomes a comment on that submission. On success the email is marked read; failures stay unread for manual retry.
 
 ### Deployment
 1. Fork or clone this repository.
@@ -91,6 +100,11 @@ Run these checks after configuring secrets:
 1. Send yourself an email whose subject starts with `[Reddit]` (or your configured prefix); keep the body plain text. Trigger **Email → Reddit Poster → Run workflow** and confirm the run logs `Posted email '...' to r/<subreddit>`.
 2. Visit the subreddit to ensure the submission appears under the Reddit account tied to your script app.
 3. Send an email without the prefix and confirm the workflow logs a skip and marks the message read.
+
+### Reply → Reddit Comment
+1. Reply to an alert email from the RSS workflow with some plain-text content; keep the original permalink in the quoted text.
+2. Trigger **Email → Reddit Poster** (the same workflow handles replies) and verify the logs report `Commented on <permalink>...`.
+3. Check the Reddit thread to ensure the comment appears under your Reddit account.
 
 ## Manual Test Procedure
 1. Configure all required secrets and optional filters.

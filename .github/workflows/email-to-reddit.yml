@@ -44,3 +44,22 @@ jobs:
         run: |
           python email_to_reddit.py
         shell: bash
+
+      - name: Turn replies into Reddit comments
+        env:
+          GMAIL_USER: ${{ secrets.GMAIL_USER }}
+          GMAIL_APP_PASSWORD: ${{ secrets.GMAIL_APP_PASSWORD }}
+          GMAIL_IMAP_USER: ${{ secrets.GMAIL_IMAP_USER }}
+          GMAIL_IMAP_PASSWORD: ${{ secrets.GMAIL_IMAP_PASSWORD }}
+          GMAIL_IMAP_HOST: ${{ secrets.GMAIL_IMAP_HOST }}
+          GMAIL_IMAP_PORT: ${{ secrets.GMAIL_IMAP_PORT }}
+          GMAIL_IMAP_MAILBOX: ${{ secrets.GMAIL_IMAP_MAILBOX }}
+          EMAIL_REPLY_SUBJECT_PREFIX: ${{ secrets.EMAIL_REPLY_SUBJECT_PREFIX }}
+          REDDIT_CLIENT_ID: ${{ secrets.REDDIT_CLIENT_ID }}
+          REDDIT_CLIENT_SECRET: ${{ secrets.REDDIT_CLIENT_SECRET }}
+          REDDIT_USERNAME: ${{ secrets.REDDIT_USERNAME }}
+          REDDIT_PASSWORD: ${{ secrets.REDDIT_PASSWORD }}
+          REDDIT_USER_AGENT: ${{ secrets.REDDIT_USER_AGENT }}
+        run: |
+          python email_reply_to_reddit.py
+        shell: bash
