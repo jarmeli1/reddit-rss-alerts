@@ -1,0 +1,166 @@
+[
+  {
+    "name": "RedditForGrownups",
+    "include_keywords": [
+      "knee replacement",
+      "knee surgery",
+      "total knee replacement",
+      "tkr",
+      "joint replacement"
+    ]
+  },
+  {
+    "name": "kneesurgery",
+    "include_keywords": [
+      "total knee replacement",
+      "tkr",
+      "knee replacement",
+      "joint replacement",
+      "arthroplasty"
+    ]
+  },
+  {
+    "name": "ACL",
+    "include_keywords": [
+      "total knee replacement",
+      "tkr",
+      "arthritis",
+      "future surgery",
+      "multiple surgeries"
+    ]
+  },
+  {
+    "name": "AskOldPeople",
+    "include_keywords": [
+      "knee replacement",
+      "knee surgery",
+      "joint replacement",
+      "arthritis",
+      "tkr"
+    ]
+  },
+  {
+    "name": "ChronicPain",
+    "include_keywords": [
+      "knee replacement",
+      "tkr",
+      "total knee replacement",
+      "knee surgery",
+      "joint replacement"
+    ]
+  },
+  {
+    "name": "Arthritis",
+    "include_keywords": [
+      "knee replacement",
+      "total knee replacement",
+      "tkr",
+      "joint replacement surgery"
+    ]
+  },
+  {
+    "name": "Osteoarthritis",
+    "include_keywords": [
+      "knee replacement",
+      "total knee replacement",
+      "tkr",
+      "joint replacement surgery"
+    ]
+  },
+  {
+    "name": "rheumatoidarthritis",
+    "include_keywords": [
+      "knee replacement",
+      "joint replacement",
+      "tkr",
+      "total knee replacement"
+    ]
+  },
+  {
+    "name": "Thritis",
+    "include_keywords": [
+      "tkr",
+      "total knee replacement",
+      "knee surgery",
+      "joint replacement"
+    ]
+  },
+  {
+    "name": "AskDocs",
+    "include_keywords": [
+      "knee replacement",
+      "knee surgery",
+      "total knee replacement",
+      "tkr"
+    ]
+  },
+  {
+    "name": "medicalschool",
+    "include_keywords": [
+      "orthopedics",
+      "knee replacement",
+      "orthopedic surgery"
+    ]
+  },
+  {
+    "name": "disability",
+    "include_keywords": [
+      "knee replacement",
+      "knee surgery",
+      "joint replacement",
+      "mobility"
+    ]
+  },
+  {
+    "name": "Veterans",
+    "include_keywords": [
+      "knee replacement",
+      "disability rating",
+      "knee surgery"
+    ]
+  },
+  {
+    "name": "Adulting",
+    "include_keywords": [
+      "knee surgery",
+      "disability insurance",
+      "recovery"
+    ]
+  },
+  {
+    "name": "over60",
+    "include_keywords": [
+      "knee replacement",
+      "knee surgery",
+      "joint replacement"
+    ]
+  },
+  {
+    "name": "powerlifting",
+    "include_keywords": [
+      "knee surgery",
+      "knee replacement",
+      "recovery"
+    ]
+  },
+  {
+    "name": "orthopaedics",
+    "include_keywords": [
+      "tkr",
+      "total knee arthroplasty",
+      "knee replacement",
+      "arthroplasty",
+      "joint replacement"
+    ]
+  },
+  {
+    "name": "KneeInjuries",
+    "include_keywords": [
+      "knee replacement",
+      "tkr",
+      "total knee replacement",
+      "joint replacement",
+      "replacement surgery"
+    ]
+  }
+]

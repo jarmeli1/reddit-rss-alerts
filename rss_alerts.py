@@ -50,6 +50,7 @@ STATE_FILENAME = "seen.json"  # stored inside the Gist
 
 INCLUDE_KEYWORDS = [k.strip().lower() for k in os.getenv("INCLUDE_KEYWORDS", "").split(",") if k.strip()]
 EXCLUDE_KEYWORDS = [k.strip().lower() for k in os.getenv("EXCLUDE_KEYWORDS", "").split(",") if k.strip()]
+SUBREDDIT_CONFIG_PATH = env_str("SUBREDDIT_CONFIG_PATH")
 
 # --- Validation ---
 def require(name, val):
@@ -57,7 +58,6 @@ def require(name, val):
         raise SystemExit(f"Missing required env/secret: {name}")
 
 for name, val in [
-    ("SUBREDDIT", SUBREDDIT),
     ("GMAIL_USER", GMAIL_USER),
     ("GMAIL_APP_PASSWORD", GMAIL_APP_PASSWORD),
     ("TO_EMAIL", TO_EMAIL),
@@ -122,6 +122,68 @@ def gist_save_state(seen_ids):
     r.raise_for_status()
 
 
+# --- Subreddit configuration --------------------------------------------
+def load_subreddit_configs():
+    configs = []
+
+    config_path = SUBREDDIT_CONFIG_PATH
+    default_config = "subreddits.json"
+
+    if not config_path and os.path.exists(default_config):
+        config_path = default_config
+
+    if config_path:
+        try:
+            with open(config_path, "r", encoding="utf-8") as fh:
+                data = json.load(fh)
+        except FileNotFoundError as exc:
+            raise SystemExit(f"Subreddit config file not found: {config_path}") from exc
+        except json.JSONDecodeError as exc:
+            raise SystemExit(f"Invalid JSON in {config_path}: {exc}") from exc
+
+        if not isinstance(data, list):
+            raise SystemExit(
+                f"Subreddit config must be a list of entries, got {type(data)!r}"
+            )
+
+        for entry in data:
+            if not isinstance(entry, dict) or "name" not in entry:
+                raise SystemExit("Each subreddit config entry must include a 'name'.")
+            include_keywords = [
+                k.strip().lower()
+                for k in entry.get("include_keywords", [])
+                if isinstance(k, str) and k.strip()
+            ]
+            exclude_keywords = [
+                k.strip().lower()
+                for k in entry.get("exclude_keywords", [])
+                if isinstance(k, str) and k.strip()
+            ]
+            configs.append(
+                {
+                    "name": entry["name"].strip(),
+                    "include_keywords": include_keywords,
+                    "exclude_keywords": exclude_keywords,
+                }
+            )
+
+    if SUBREDDIT:
+        configs.append(
+            {
+                "name": SUBREDDIT.strip(),
+                "include_keywords": INCLUDE_KEYWORDS,
+                "exclude_keywords": EXCLUDE_KEYWORDS,
+            }
+        )
+
+    if not configs:
+        raise SystemExit(
+            "No subreddits configured. Set SUBREDDIT or provide entries in subreddits.json."
+        )
+
+    return configs
+
+
 # --- RSS ---
 def fetch_reddit_feed(url):
     headers = {
@@ -177,8 +239,8 @@ def extract_media_url(entry):
     return ""
 
 
-def passes_keyword_filters(entry):
-    if not INCLUDE_KEYWORDS and not EXCLUDE_KEYWORDS:
+def passes_keyword_filters(entry, include_keywords, exclude_keywords):
+    if not include_keywords and not exclude_keywords:
         return True
 
     text_parts = [
@@ -188,9 +250,9 @@ def passes_keyword_filters(entry):
     ]
     body = " \n ".join(part for part in text_parts if part).lower()
 
-    if INCLUDE_KEYWORDS and not any(keyword in body for keyword in INCLUDE_KEYWORDS):
+    if include_keywords and not any(keyword in body for keyword in include_keywords):
         return False
-    if EXCLUDE_KEYWORDS and any(keyword in body for keyword in EXCLUDE_KEYWORDS):
+    if exclude_keywords and any(keyword in body for keyword in exclude_keywords):
         return False
     return True
 
@@ -247,8 +309,7 @@ def recent_enough(entry, cutoff):
 
 # --- Main ---
 def main():
-    rss_url = f"https://www.reddit.com/r/{SUBREDDIT}/new/.rss"
-    feed = fetch_reddit_feed(rss_url)
+    subreddit_configs = load_subreddit_configs()
 
     seen_ids = gist_get_state()
     now = utcnow()
@@ -257,31 +318,39 @@ def main():
     new_seen = False
     sent_count = 0
 
-    for entry in feed.entries:
-        entry_id = entry.get("id") or entry.get("link")
-        if not entry_id:
-            continue
+    for config in subreddit_configs:
+        name = config["name"]
+        include_keywords = config["include_keywords"] or INCLUDE_KEYWORDS
+        exclude_keywords = config["exclude_keywords"] or EXCLUDE_KEYWORDS
 
-        if entry_id in seen_ids:
-            continue
+        rss_url = f"https://www.reddit.com/r/{name}/new/.rss"
+        feed = fetch_reddit_feed(rss_url)
 
-        if not recent_enough(entry, lookback_cutoff):
+        for entry in feed.entries:
+            entry_id = entry.get("id") or entry.get("link")
+            if not entry_id:
+                continue
+
+            if entry_id in seen_ids:
+                continue
+
+            if not recent_enough(entry, lookback_cutoff):
+                seen_ids.add(entry_id)
+                new_seen = True
+                continue
+
+            if not passes_keyword_filters(entry, include_keywords, exclude_keywords):
+                seen_ids.add(entry_id)
+                new_seen = True
+                continue
+
+            subject = f"[r/{name}] {entry.get('title','(no title)')[:180]}"
+            html = render_email(name, entry)
+            send_email(subject, html)
+
             seen_ids.add(entry_id)
             new_seen = True
-            continue
-
-        if not passes_keyword_filters(entry):
-            seen_ids.add(entry_id)
-            new_seen = True
-            continue
-
-        subject = f"[r/{SUBREDDIT}] {entry.get('title','(no title)')[:180]}"
-        html = render_email(SUBREDDIT, entry)
-        send_email(subject, html)
-
-        seen_ids.add(entry_id)
-        new_seen = True
-        sent_count += 1
+            sent_count += 1
 
     if new_seen:
         gist_save_state(seen_ids)
