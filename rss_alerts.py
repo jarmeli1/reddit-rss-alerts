@@ -90,13 +90,49 @@ def gist_headers():
     return {
         "Authorization": f"Bearer {GIST_TOKEN}",
         "Accept": "application/vnd.github+json",
+        "X-GitHub-Api-Version": "2022-11-28",
     }
+
+
+def raise_gist_error(action, error):
+    response = getattr(error, "response", None)
+    status = getattr(response, "status_code", None)
+    detail = ""
+    if response is not None and response.text:
+        detail = response.text.strip()
+    if status == 401:
+        hint = (
+            "GitHub responded 401 while "
+            f"{action}. Confirm GIST_TOKEN is valid, has gist:write scope, and "
+            "matches the owner of the private gist."
+        )
+    elif status == 403:
+        hint = (
+            "GitHub responded 403 while "
+            f"{action}. The token may be missing gist permissions or is rate "
+            "limited."
+        )
+    elif status == 404:
+        hint = (
+            "GitHub responded 404 while "
+            f"{action}. Double-check GIST_ID and that the token can access "
+            "the gist."
+        )
+    else:
+        hint = f"GitHub error {status} while {action}."
+    message = hint
+    if detail:
+        message += f" Response body: {detail[:300]}"
+    raise SystemExit(message) from error
 
 
 def gist_get_state():
     url = f"https://api.github.com/gists/{GIST_ID}"
-    r = requests.get(url, headers=gist_headers(), timeout=20)
-    r.raise_for_status()
+    try:
+        r = requests.get(url, headers=gist_headers(), timeout=20)
+        r.raise_for_status()
+    except requests.HTTPError as exc:
+        raise_gist_error("loading gist state", exc)
     data = r.json()
     files = data.get("files", {})
     if STATE_FILENAME in files and files[STATE_FILENAME].get("content") is not None:
@@ -118,8 +154,11 @@ def gist_save_state(seen_ids):
             }
         }
     }
-    r = requests.patch(url, headers=gist_headers(), json=payload, timeout=20)
-    r.raise_for_status()
+    try:
+        r = requests.patch(url, headers=gist_headers(), json=payload, timeout=20)
+        r.raise_for_status()
+    except requests.HTTPError as exc:
+        raise_gist_error("saving gist state", exc)
 
 
 # --- Subreddit configuration --------------------------------------------
