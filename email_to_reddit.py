@@ -136,11 +136,12 @@ def main() -> None:
     deferred_to_reply = 0
 
     for msg_id in message_ids:
-        status, parts = mail.fetch(msg_id, "(RFC822)")
+        status, parts = mail.fetch(msg_id, "(BODY.PEEK[])")
         if status != "OK":
             print(f"Failed to fetch message {msg_id!r}: {status}")
             continue
 
+        # Using BODY.PEEK[] keeps the \Seen flag untouched until we decide
         raw_email = parts[0][1]
         email_msg = message_from_bytes(raw_email)
 
