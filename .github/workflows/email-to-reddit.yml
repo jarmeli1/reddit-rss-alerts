@@ -35,6 +35,7 @@ jobs:
           GMAIL_IMAP_PORT: ${{ secrets.GMAIL_IMAP_PORT }}
           GMAIL_IMAP_MAILBOX: ${{ secrets.GMAIL_IMAP_MAILBOX }}
           EMAIL_SUBJECT_PREFIX: ${{ secrets.EMAIL_SUBJECT_PREFIX }}
+          EMAIL_REPLY_SUBJECT_PREFIX: ${{ secrets.EMAIL_REPLY_SUBJECT_PREFIX }}
           REDDIT_CLIENT_ID: ${{ secrets.REDDIT_CLIENT_ID }}
           REDDIT_CLIENT_SECRET: ${{ secrets.REDDIT_CLIENT_SECRET }}
           REDDIT_USERNAME: ${{ secrets.REDDIT_USERNAME }}
@@ -54,6 +55,7 @@ jobs:
           GMAIL_IMAP_HOST: ${{ secrets.GMAIL_IMAP_HOST }}
           GMAIL_IMAP_PORT: ${{ secrets.GMAIL_IMAP_PORT }}
           GMAIL_IMAP_MAILBOX: ${{ secrets.GMAIL_IMAP_MAILBOX }}
+          EMAIL_SUBJECT_PREFIX: ${{ secrets.EMAIL_SUBJECT_PREFIX }}
           EMAIL_REPLY_SUBJECT_PREFIX: ${{ secrets.EMAIL_REPLY_SUBJECT_PREFIX }}
           REDDIT_CLIENT_ID: ${{ secrets.REDDIT_CLIENT_ID }}
           REDDIT_CLIENT_SECRET: ${{ secrets.REDDIT_CLIENT_SECRET }}

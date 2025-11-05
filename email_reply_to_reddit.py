@@ -102,6 +102,7 @@ REDDIT_USER_AGENT = env_str(
 )
 
 REPLY_SUBJECT_PREFIX = env_str("EMAIL_REPLY_SUBJECT_PREFIX", "Re: [r/")
+POST_SUBJECT_PREFIX = env_str("EMAIL_SUBJECT_PREFIX", "[Reddit]")
 
 for name, value in [
     ("GMAIL_IMAP_USER", GMAIL_USER),
@@ -151,6 +152,7 @@ def main() -> None:
 
     commented = 0
     skipped = 0
+    deferred_to_posts = 0
 
     for msg_id in message_ids:
         status, parts = mail.fetch(msg_id, "(RFC822)")
@@ -165,6 +167,13 @@ def main() -> None:
         sender = parse_header(email_msg.get("From"))
 
         if REPLY_SUBJECT_PREFIX and not subject.startswith(REPLY_SUBJECT_PREFIX):
+            if POST_SUBJECT_PREFIX and subject.startswith(POST_SUBJECT_PREFIX):
+                print(
+                    "Skipping email for reply workflow because subject matches new post "
+                    "prefix; leaving unread for post handler."
+                )
+                deferred_to_posts += 1
+                continue
             print(f"Skipping email from {sender!r} – subject missing reply prefix {REPLY_SUBJECT_PREFIX!r}.")
             mail.store(msg_id, "+FLAGS", "(\\Seen)")
             skipped += 1
@@ -203,7 +212,10 @@ def main() -> None:
 
     mail.close()
     mail.logout()
-    print(f"Done. Comments posted: {commented}; Skipped: {skipped}")
+    summary = f"Done. Comments posted: {commented}; Skipped: {skipped}"
+    if deferred_to_posts:
+        summary += f"; Deferred to posts: {deferred_to_posts}"
+    print(summary)
 
 
 if __name__ == "__main__":

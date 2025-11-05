@@ -65,6 +65,7 @@ IMAP_HOST = env_str("GMAIL_IMAP_HOST", "imap.gmail.com")
 IMAP_PORT = int(env_str("GMAIL_IMAP_PORT", "993"))
 IMAP_MAILBOX = env_str("GMAIL_IMAP_MAILBOX", "INBOX")
 SUBJECT_PREFIX = env_str("EMAIL_SUBJECT_PREFIX", "[Reddit]")
+REPLY_SUBJECT_PREFIX = env_str("EMAIL_REPLY_SUBJECT_PREFIX", "Re: [r/")
 
 GMAIL_USER = env_str("GMAIL_IMAP_USER", env_str("GMAIL_USER"))
 GMAIL_PASSWORD = env_str("GMAIL_IMAP_PASSWORD", env_str("GMAIL_APP_PASSWORD"))
@@ -132,6 +133,7 @@ def main() -> None:
 
     posted = 0
     skipped = 0
+    deferred_to_reply = 0
 
     for msg_id in message_ids:
         status, parts = mail.fetch(msg_id, "(RFC822)")
@@ -146,6 +148,13 @@ def main() -> None:
         sender = parse_subject(email_msg.get("From"))
 
         if SUBJECT_PREFIX and not subject.startswith(SUBJECT_PREFIX):
+            if REPLY_SUBJECT_PREFIX and subject.startswith(REPLY_SUBJECT_PREFIX):
+                print(
+                    "Skipping email for post workflow because subject matches reply prefix; "
+                    "leaving unread for reply handler."
+                )
+                deferred_to_reply += 1
+                continue
             print(f"Skipping email from {sender!r} – subject missing prefix {SUBJECT_PREFIX!r}.")
             mail.store(msg_id, "+FLAGS", "(\\Seen)")
             skipped += 1
@@ -177,7 +186,10 @@ def main() -> None:
 
     mail.close()
     mail.logout()
-    print(f"Done. Posted: {posted}; Skipped: {skipped}")
+    summary = f"Done. Posted: {posted}; Skipped: {skipped}"
+    if deferred_to_reply:
+        summary += f"; Deferred to replies: {deferred_to_reply}"
+    print(summary)
 
 
 if __name__ == "__main__":

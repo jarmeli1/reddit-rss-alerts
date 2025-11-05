@@ -99,11 +99,12 @@ Run these checks after configuring secrets:
 ### Email → Reddit Poster
 1. Send yourself an email whose subject starts with `[Reddit]` (or your configured prefix); keep the body plain text. Trigger **Email → Reddit Poster → Run workflow** and confirm the run logs `Posted email '...' to r/<subreddit>`.
 2. Visit the subreddit to ensure the submission appears under the Reddit account tied to your script app.
-3. Send an email without the prefix and confirm the workflow logs a skip and marks the message read.
+3. Send an email without the prefix and confirm the workflow logs a skip. Messages that look like alert replies are left unread so the comment handler can pick them up; everything else is marked read.
 
 ### Reply → Reddit Comment
 1. Reply to an alert email from the RSS workflow with some plain-text content; keep the original permalink in the quoted text.
 2. Trigger **Email → Reddit Poster** (the same workflow handles replies) and verify the logs report `Commented on <permalink>...`.
+   - You'll also see logs noting when the reply handler defers an email back to the post workflow (for subjects that match the posting prefix).
 3. Check the Reddit thread to ensure the comment appears under your Reddit account.
 
 ## Manual Test Procedure
