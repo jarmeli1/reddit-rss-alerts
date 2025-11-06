@@ -64,13 +64,23 @@ def trim_reply_body(body: str) -> str:
     lines = body.splitlines()
     trimmed: list[str] = []
     for line in lines:
-        if line.startswith(">"):
+        normalized = line.lstrip()
+        # Strip quoting markers to detect forwarded/replied content reliably
+        stripped = normalized.lstrip("> ")
+        # Normalize whitespace (including non-breaking) for comparisons
+        lower = stripped.lower()
+        collapsed = "".join(" " if ch.isspace() else ch for ch in lower)
+        collapsed = " ".join(collapsed.split())
+
+        if normalized.startswith(">"):
             break
-        if line.startswith("On ") and line.rstrip().endswith("wrote"):
+        if collapsed.startswith("on ") and (" wrote:" in collapsed or collapsed.endswith("wrote")):
             break
-        if line.startswith("On ") and " wrote:" in line:
+        if collapsed.startswith("from:"):
             break
-        if line.startswith("From: "):
+        if collapsed.startswith("sent from my"):
+            break
+        if collapsed.startswith("begin forwarded message"):
             break
         trimmed.append(line)
     return "\n".join(trimmed).strip()
