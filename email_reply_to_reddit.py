@@ -63,7 +63,7 @@ def trim_reply_body(body: str) -> str:
     """Remove quoted original messages (best effort)."""
     lines = body.splitlines()
     trimmed: list[str] = []
-    for line in lines:
+    for i, line in enumerate(lines):
         normalized = line.lstrip()
         # Strip quoting markers to detect forwarded/replied content reliably
         stripped = normalized.lstrip("> ")
@@ -75,6 +75,23 @@ def trim_reply_body(body: str) -> str:
         if normalized.startswith(">"):
             break
         if collapsed.startswith("on ") and (" wrote:" in collapsed or collapsed.endswith("wrote")):
+            break
+        # Handle multi-line "On ... wrote:" where Gmail wraps the header
+        if collapsed.startswith("on") and (
+            collapsed == "on"
+            or (collapsed.startswith("on ") and ("@" in collapsed or "at " in collapsed))
+        ):
+            # Look ahead to see if a following line ends with "wrote:"
+            for j in range(i + 1, min(i + 5, len(lines))):
+                lookahead = lines[j].lstrip().lstrip("> ")
+                lookahead_lower = lookahead.lower().strip()
+                if "wrote:" in lookahead_lower or lookahead_lower.endswith("wrote"):
+                    break
+                if lookahead_lower == "" or lookahead_lower.startswith(">"):
+                    break
+            else:
+                trimmed.append(line)
+                continue
             break
         if collapsed.startswith("from:"):
             break
